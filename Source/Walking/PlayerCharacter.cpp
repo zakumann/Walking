@@ -14,8 +14,6 @@
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"
-#include "Components/PrimitiveComponent.h"
-#include "Components/BoxComponent.h"
 #include "Door.h"
 
 // Sets default values
@@ -105,10 +103,14 @@ void APlayerCharacter::Interact()
 	FVector Start = FirstPersonCamera->GetComponentLocation();
 	FVector End = Start + FirstPersonCamera->GetForwardVector() * InteractLineTraceLength;
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.f);
+	DrawDebugPoint(GetWorld(), End, 20.f, FColor::Red, false, 2.f);
+	DrawDebugPoint(GetWorld(), Start, 20.f, FColor::Blue, false, 2.f);
 
 	ADoor* Door = Cast<ADoor>(HitResult.GetActor());
 	if (Door)
 	{
+		Door->Character = this;
 		Door->OnInteract();
 	}
 }

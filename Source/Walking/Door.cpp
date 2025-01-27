@@ -2,6 +2,7 @@
 
 
 #include "Door.h"
+#include "PlayerCharacter.h"
 
 // Sets default values
 ADoor::ADoor()
@@ -40,6 +41,7 @@ void ADoor::OnInteract()
 {
     if (bIsDoorClosed)
     {
+        SetDoorOnSameSide();
         Timeline.Play();
     }
     else {
@@ -51,7 +53,20 @@ void ADoor::OnInteract()
 
 void ADoor::OpenDoor(float Value)
 {
-    FRotator Rot = FRotator(0.f, DoorRotateAngle * Value, 0.f);
+    //float Angle = bDoorOnSameSide ? DoorRotateAngle : -DoorRotateAngle;
+    float Angle = DoorRotateAngle;
+
+    FRotator Rot = FRotator(0.0f, -Angle * Value, 0.0f);
 
     Door->SetRelativeRotation(Rot);
+}
+
+void ADoor::SetDoorOnSameSide()
+{
+    if (Character)
+    {
+        FVector CharacterFV = Character->GetActorForwardVector();
+        FVector DoorFV = GetActorForwardVector();
+        bDoorOnSameSide = (FVector::DotProduct(CharacterFV, DoorFV) >= 0);
+    }
 }

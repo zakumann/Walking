@@ -22,6 +22,8 @@ public:
 
     void OnInteract();
 
+    class APlayerCharacter* Character;
+
 private:
 
     UPROPERTY(VisibleAnywhere, Category = "Mesh")
@@ -43,4 +45,7 @@ protected:
 
     UFUNCTION()
     void OpenDoor(float Value); // Bind function
+
+    bool bDoorOnSameSide;
+    void SetDoorOnSameSide();
 };
