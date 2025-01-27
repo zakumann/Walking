@@ -43,6 +43,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	class UCameraComponent* FirstPersonCamera;
 
+	UPROPERTY(EditAnywhere)
+	float InteractLineTraceLength = 350.f;
+
 	// Current interactable object
 	UPROPERTY()
 	ADoor* CurrentInteractable;
@@ -51,6 +54,4 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	void SetCurrentInteractable(ADoor* Interactable);
 };

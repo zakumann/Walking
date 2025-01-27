@@ -21,7 +21,7 @@
 // Sets default values
 APlayerCharacter::APlayerCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	// Configure character movement
@@ -41,7 +41,7 @@ APlayerCharacter::APlayerCharacter()
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	// Get the player controller and add the input mapping context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -99,31 +99,16 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Interact()
 {
-	if (CurrentInteractable)
+	if (FirstPersonCamera == nullptr) return;
+
+	FHitResult HitResult;
+	FVector Start = FirstPersonCamera->GetComponentLocation();
+	FVector End = Start + FirstPersonCamera->GetForwardVector() * InteractLineTraceLength;
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
+
+	ADoor* Door = Cast<ADoor>(HitResult.GetActor());
+	if (Door)
 	{
-		CurrentInteractable->ToggleDoor();
+		Door->OnInteract();
 	}
-	else
-	{
-		FVector Start = FirstPersonCamera->GetComponentLocation();
-		FVector End = Start + (FirstPersonCamera->GetForwardVector() * 200.0f); // Interaction range of 200 units
-
-		FHitResult HitResult;
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
-
-		// Perform a line trace to detect interactable objects
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
-		{
-			if (ADoor* Door = Cast<ADoor>(HitResult.GetActor()))
-			{
-				Door->ToggleDoor();
-			}
-		}
-	}
-}
-
-void APlayerCharacter::SetCurrentInteractable(ADoor* Interactable)
-{
-	CurrentInteractable = Interactable;
 }

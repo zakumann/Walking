@@ -2,12 +2,6 @@
 
 
 #include "Door.h"
-#include "Components/TimelineComponent.h"
-#include "Components/StaticMeshComponent.h"
-#include "Components/BoxComponent.h"
-#include "Curves/CurveFloat.h"
-#include "GameFramework/Actor.h"
-#include "PlayerCharacter.h"
 
 // Sets default values
 ADoor::ADoor()
@@ -15,18 +9,11 @@ ADoor::ADoor()
     // Set this actor to call Tick() every frame
     PrimaryActorTick.bCanEverTick = true;
 
-    // Components setup
-    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-    DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
-    DoorMesh->SetupAttachment(RootComponent);
+    DoorFrame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorFrame"));
+    DoorFrame->SetupAttachment(RootComponent);
 
-    DoorTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DoorTimeline"));
-
-    TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
-    TriggerBox->SetupAttachment(RootComponent);
-
-    bIsOpen = false;
-    OverlappingPlayer = nullptr;
+    Door = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Door"));
+    Door->SetupAttachment(DoorFrame);
 }
 
 // Called when the game starts or when spawned
@@ -34,62 +21,37 @@ void ADoor::BeginPlay()
 {
     Super::BeginPlay();
 
-    ClosedRotation = GetActorRotation();
-    OpenRotation = ClosedRotation + FRotator(0.0f, 90.0f, 0.0f);
-
-    if (DoorCurve)
+    if (CurveFloat)
     {
-        InterpFunction.BindUFunction(this, FName("HandleDoorProgress"));
-        TimelineFinished.BindUFunction(this, FName("OnTimelineFinished"));
-
-        DoorTimeline->AddInterpFloat(DoorCurve, InterpFunction);
-        DoorTimeline->SetTimelineFinishedFunc(TimelineFinished);
-    }
-    TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADoor::OnTriggerBoxBeginOverlap);
-    TriggerBox->OnComponentEndOverlap.AddDynamic(this, &ADoor::OnTriggerBoxEndOverlap);
-}
-
-void ADoor::OnTriggerBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-    if (OtherActor && OtherActor->IsA<APlayerCharacter>())
-    {
-        OverlappingPlayer = OtherActor;
-        ToggleDoor();
+        FOnTimelineFloat TimelineProgress;
+        TimelineProgress.BindDynamic(this, &ADoor::OpenDoor);
+        Timeline.AddInterpFloat(CurveFloat, TimelineProgress);
     }
 }
 
-void ADoor::OnTriggerBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ADoor::Tick(float DeltaTime)
 {
-    if (OtherActor && OtherActor == OverlappingPlayer)
-    {
-        OverlappingPlayer = nullptr;
-        ToggleDoor();
-    }
-}
-void ADoor::HandleDoorProgress(float Value)
-{
-    FRotator NewRotation = FMath::Lerp(ClosedRotation, OpenRotation, Value);
-    SetActorRotation(NewRotation);
+    Super::Tick(DeltaTime);
+
+    Timeline.TickTimeline(DeltaTime);
 }
 
-void ADoor::OnTimelineFinished()
+void ADoor::OnInteract()
 {
-    bIsOpen = !bIsOpen;
+    if (bIsDoorClosed)
+    {
+        Timeline.Play();
+    }
+    else {
+        Timeline.Reverse();
+    }
+
+    bIsDoorClosed = !bIsDoorClosed; // Flip flop
 }
 
-void ADoor::ToggleDoor()
+void ADoor::OpenDoor(float Value)
 {
-    if (DoorTimeline->IsPlaying())
-    {
-        return;
-    }
+    FRotator Rot = FRotator(0.f, DoorRotateAngle * Value, 0.f);
 
-    if (bIsOpen)
-    {
-        DoorTimeline->Reverse();
-    }
-    else
-    {
-        DoorTimeline->Play();
-    }
+    Door->SetRelativeRotation(Rot);
 }
